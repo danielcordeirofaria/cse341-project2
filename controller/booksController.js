@@ -7,10 +7,6 @@ const createBook = async (req, res) => {
   // #swagger.description = 'Create a new book in the library.'
   const { title, author, isbn, publisher, publicationDate, genre, summary, language, pageCount, deweyDecimal, lcc } = req.body;
 
-  if (!title || !author || !isbn) {
-    return res.status(400).json({ message: 'Title, Author, and ISBN are required fields.' });
-  }
-
   const book = {
     title,
     author,
@@ -89,10 +85,6 @@ const updateBook = async (req, res) => {
     return res.status(400).json({ message: 'Invalid book ID format.' });
   }
 
-  if (bookData.title === '' || bookData.author === '' || bookData.isbn === '') {
-    return res.status(400).json({ message: 'Title, Author, and ISBN cannot be empty.' });
-  }
-
   try {
     const db = getDatabase();
     const response = await db.collection('books').updateOne(
@@ -115,9 +107,11 @@ const updateBook = async (req, res) => {
         });
       }
       if (bookData.isBorrowed === false && bookData.borrowedBy === null) {
+        // Fetch the book to include its details in the return message
+        const updatedBook = await db.collection('books').findOne({ _id: new ObjectId(bookId) });
         return res.status(200).json({ message: 'Book successfully returned.',
-            bookId: bookData._id,
-            title: bookData.title,
+            bookId: updatedBook._id,
+            title: updatedBook.title,
          });
       }
 
