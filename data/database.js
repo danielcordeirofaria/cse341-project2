@@ -1,9 +1,7 @@
 // data/database.js
 
-// Load environment variables from .env file only if not in production
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config();
-}
+const dotenv = require("dotenv");
+dotenv.config();
 const mongoClient = require("mongodb").MongoClient;
 
 let database;
