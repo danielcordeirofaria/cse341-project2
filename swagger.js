@@ -8,13 +8,24 @@ const doc = {
   },
   host: 'localhost:3000',
   schemes: ['http'],
+  securityDefinitions: {
+    google_oauth: {
+      type: 'oauth2',
+      authorizationUrl: 'http://localhost:3000/auth/google',
+      flow: 'implicit',
+      scopes: {
+        'read_write': 'Acesso para ler e escrever dados'
+      }
+    }
+  },
+  security: [{
+    "google_oauth": ['read_write']
+  }]
 };
 
 const outputFile = './swagger-output.json';
-const endpointsFiles = ['./routes/index.js']; // Pointing to the main routes file
+const endpointsFiles = ['./routes/index.js'];
 
-// Generate swagger.json
 swaggerAutogen(outputFile, endpointsFiles, doc).then(() => {
-    // Optional: If you want to automatically start the server after generation
-    // require('./index.js'); 
+    require('./index.js'); 
 });

@@ -6,15 +6,19 @@ const { body, validationResult } = require('express-validator');
 const bookValidationRules = () => {
   return [
     // title must not be empty and have at least 3 chars
-    body('title').isString().isLength({ min: 3 }).withMessage('Title must be at least 3 characters long.'),
+    body('title').notEmpty().withMessage('Title is required.'),
     // author must not be empty and have at least 3 chars
-    body('author').isString().isLength({ min: 3 }).withMessage('Author must be at least 3 characters long.'),
-    // isbn must be alphanumeric and between 10-13 chars
-    body('isbn').isAlphanumeric().isLength({ min: 10, max: 13 }).withMessage('ISBN must be alphanumeric and between 10-13 characters.'),
+    body('author').notEmpty().withMessage('Author is required.'),
+    // isbn must be a valid ISBN
+    body('isbn').notEmpty().withMessage('ISBN is required.').isISBN().withMessage('Must be a valid ISBN.'),
+    // genre must not be empty
+    body('genre').optional().isString(),
     // publicationDate must be a valid date if it exists
     body('publicationDate').optional({ checkFalsy: true }).isISO8601().toDate().withMessage('Publication date must be a valid date.'),
     // pageCount must be an integer if it exists
-    body('pageCount').optional({ checkFalsy: true }).isInt({ min: 1 }).withMessage('Page count must be a positive integer.')
+    body('pageCount').optional({ checkFalsy: true }).isInt({ min: 1 }).withMessage('Page count must be a positive integer.'),
+    // isBorrowed must be a boolean if provided
+    body('isBorrowed').optional().isBoolean().withMessage('isBorrowed must be a boolean value (true or false).')
   ];
 };
 
@@ -25,11 +29,11 @@ const updateBookValidationRules = () => {
     body('title').optional().isString().isLength({ min: 3 }).withMessage('Title must be at least 3 characters long.'),
     // author must not be empty and have at least 3 chars if provided
     body('author').optional().isString().isLength({ min: 3 }).withMessage('Author must be at least 3 characters long.'),
-    // isbn must be alphanumeric and between 10-13 chars if provided
-    body('isbn').optional().isAlphanumeric().isLength({ min: 10, max: 13 }).withMessage('ISBN must be alphanumeric and between 10-13 characters.'),
+    // isbn must be a valid ISBN if provided
+    body('isbn').optional().isISBN().withMessage('Must be a valid ISBN.'),
     // publicationDate must be a valid date if it exists
     body('publicationDate').optional({ checkFalsy: true }).isISO8601().toDate().withMessage('Publication date must be a valid date.'),
-    // pageCount must be an integer if it exists
+    // pages must be an integer if it exists
     body('pageCount').optional({ checkFalsy: true }).isInt({ min: 1 }).withMessage('Page count must be a positive integer.'),
     // isBorrowed must be a boolean if provided
     body('isBorrowed').optional().isBoolean().withMessage('isBorrowed must be a boolean value (true or false).')

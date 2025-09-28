@@ -1,7 +1,8 @@
-//controller/booksController.js
+// controllers/booksController.js
 
-const { getDatabase } = require('../data/database');
-const { ObjectId } = require('mongodb');
+const Book = require('../models/book');
+const mongoose = require('mongoose');
+const { ObjectId } = mongoose;
 
 const createBook = async (req, res) => {
   // #swagger.description = 'Create a new book in the library.'
@@ -24,32 +25,27 @@ const createBook = async (req, res) => {
   };
 
   try {
-    const db = getDatabase();
-    const response = await db.collection('books').insertOne(book);
+    const newBook = new Book(book);
+    const savedBook = await newBook.save();
 
-    if (response.acknowledged) {
-      const createdBook = { _id: response.insertedId, ...book };
-      res.status(201).json({ 
-        message: 'Book created successfully', 
-        book: createdBook });
-    } else {
-      res.status(500).json({ message: 'An error occurred while creating the book.' });
-    }
+    res.status(201).json({
+      message: 'Book created successfully',
+      book: savedBook
+    });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'An internal server error occurred.' });
+    res.status(400).json({ message: error.message });
   }
 };
 
 const getAllBooks = async (req, res) => {
   // #swagger.description = 'Retrieve all books from the library.'
   try {
-    const db = getDatabase();
-    const books = await db.collection('books').find().toArray();
+    const books = await Book.find();
     res.status(200).json(books);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'An internal server error occurred.' });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -57,13 +53,12 @@ const getBookById = async (req, res) => {
   // #swagger.description = 'Retrieve a single book by its ID.'
   const bookId = req.params.id;
 
-  if (!ObjectId.isValid(bookId)) {
+  if (!mongoose.Types.ObjectId.isValid(bookId)) {
     return res.status(400).json({ message: 'Invalid book ID format.' });
   }
 
   try {
-    const db = getDatabase();
-    const book = await db.collection('books').findOne({ _id: new ObjectId(bookId) });
+    const book = await Book.findById(bookId);
 
     if (book) {
       res.status(200).json(book);
@@ -72,7 +67,7 @@ const getBookById = async (req, res) => {
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'An internal server error occurred.' });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -81,47 +76,41 @@ const updateBook = async (req, res) => {
   const bookId = req.params.id;
   const bookData = req.body;
 
-  if (!ObjectId.isValid(bookId)) {
+  if (!mongoose.Types.ObjectId.isValid(bookId)) {
     return res.status(400).json({ message: 'Invalid book ID format.' });
   }
 
   try {
-    const db = getDatabase();
-    const response = await db.collection('books').updateOne(
-      { _id: new ObjectId(bookId) },
-      { $set: bookData }
+    const updatedBook = await Book.findByIdAndUpdate(
+      bookId,
+      { $set: bookData },
+      { new: true }
     );
 
-    if (response.matchedCount === 0) {
+    if (!updatedBook) {
       return res.status(404).json({ message: 'Book not found.' });
     }
 
-    if (response.modifiedCount > 0) {
-      if (bookData.isBorrowed === true) {
-        const updatedBook = await db.collection('books').findOne({ _id: new ObjectId(bookId) });
-        return res.status(200).json({
-          message: 'Book successfully borrowed.',
-          bookId: updatedBook._id,
-          title: updatedBook.title,
-          borrowedBy: updatedBook.borrowedBy
-        });
-      }
-      if (bookData.isBorrowed === false && bookData.borrowedBy === null) {
-        // Fetch the book to include its details in the return message
-        const updatedBook = await db.collection('books').findOne({ _id: new ObjectId(bookId) });
-        return res.status(200).json({ message: 'Book successfully returned.',
-            bookId: updatedBook._id,
-            title: updatedBook.title,
-         });
-      }
-
-      res.status(200).json({ message: 'Book updated successfully.' });
-    } else {
-      res.status(200).json({ message: 'No changes were made to the book.' });
+    if (bookData.isBorrowed === true) {
+      return res.status(200).json({
+        message: 'Book successfully borrowed.',
+        bookId: updatedBook._id,
+        title: updatedBook.title,
+        borrowedBy: updatedBook.borrowedBy
+      });
     }
+    if (bookData.isBorrowed === false && bookData.borrowedBy === null) {
+      return res.status(200).json({
+        message: 'Book successfully returned.',
+        bookId: updatedBook._id,
+        title: updatedBook.title
+      });
+    }
+
+    res.status(200).json({ message: 'Book updated successfully.' });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'An internal server error occurred.' });
+    res.status(400).json({ message: error.message });
   }
 };
 
@@ -129,22 +118,21 @@ const deleteBook = async (req, res) => {
   // #swagger.description = 'Delete a book by ID.'
   const bookId = req.params.id;
 
-  if (!ObjectId.isValid(bookId)) {
+  if (!mongoose.Types.ObjectId.isValid(bookId)) {
     return res.status(400).json({ message: 'Invalid book ID format.' });
   }
 
   try {
-    const db = getDatabase();
-    const response = await db.collection('books').deleteOne({ _id: new ObjectId(bookId) });
+    const book = await Book.findByIdAndDelete(bookId);
 
-    if (response.deletedCount > 0) {
+    if (book) {
       res.status(200).json({ message: 'Book deleted successfully.' });
     } else {
       res.status(404).json({ message: 'Book not found.' });
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'An internal server error occurred.' });
+    res.status(500).json({ message: error.message });
   }
 };
 
