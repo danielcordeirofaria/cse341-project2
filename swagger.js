@@ -1,17 +1,21 @@
 const swaggerAutogen = require('swagger-autogen')();
 
+// Use `cse341-project2-ai9y.onrender.com` como host em produção, ou localhost para desenvolvimento
+const host = process.env.NODE_ENV === 'production' ? 'cse341-project2-ai9y.onrender.com' : 'localhost:3000';
+const schemes = process.env.NODE_ENV === 'production' ? ['https'] : ['http'];
+
 const doc = {
   info: {
     title: 'Library API',
     description: 'API for managing books in a library.',
-    version: '1.0.0',
+    version: '1.0.0'
   },
-  host: 'localhost:3000',
-  schemes: ['http'],
+  host: host,
+  schemes: schemes,
   securityDefinitions: {
     google_oauth: {
       type: 'oauth2',
-      authorizationUrl: 'http://localhost:3000/auth/google',
+      authorizationUrl: `${schemes[0]}://${host}/auth/google`,
       flow: 'implicit',
       scopes: {
         'read_write': 'Acesso para ler e escrever dados'
@@ -19,7 +23,7 @@ const doc = {
     }
   },
   security: [{
-    "google_oauth": ['read_write']
+    'google_oauth': ['read_write']
   }]
 };
 
